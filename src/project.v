@@ -1,26 +1,60 @@
 /*
- * Copyright (c) 2024 Your Name
- * SPDX-License-Identifier: Apache-2.0
+ * Họ và tên: Lưu Tuấn Vỹ
+ * Mã sinh viên: 24101004
+ * Đề tài: C01 - Bộ giám sát cửa sổ giá trị hợp lệ 8-bit
  */
 
 `default_nettype none
 
-module tt_um_example (
-    input  wire [7:0] ui_in,    // Dedicated inputs
-    output wire [7:0] uo_out,   // Dedicated outputs
-    input  wire [7:0] uio_in,   // IOs: Input path
-    output wire [7:0] uio_out,  // IOs: Output path
-    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
-    input  wire       ena,      // always 1 when the design is powered, so you can ignore it
-    input  wire       clk,      // clock
-    input  wire       rst_n     // reset_n - low to reset
+module tt_um_luutuanvy (
+    input  wire [7:0] ui_in,    
+    output wire [7:0] uo_out,   
+    input  wire [7:0] uio_in,   
+    output wire [7:0] uio_out,  
+    output wire [7:0] uio_oe,   
+    input  wire       ena,      
+    input  wire       clk,      
+    input  wire       rst_n     
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+    assign uio_oe  = 8'b0000_0000;
+    assign uio_out = 8'b0000_0000;
 
+    reg [7:0] min_reg;
+    reg [7:0] max_reg;
+    reg       sel_toggle; 
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            min_reg    <= 8'd0;
+            max_reg    <= 8'd255;
+            sel_toggle <= 1'b0;
+        end else if (ena) begin
+            if (sel_toggle == 1'b0) begin
+                min_reg    <= uio_in;   
+                sel_toggle <= 1'b1;
+            end else begin
+                max_reg    <= uio_in;   
+                sel_toggle <= 1'b0;
+            end
+        end
+    end
+
+    wire [7:0] sample = ui_in;
+    
+    wire is_error  = (min_reg > max_reg); 
+    wire is_under  = (sample < min_reg);
+    wire is_over   = (sample > max_reg);
+    wire is_inside = (sample >= min_reg) && (sample <= max_reg);
+
+    assign uo_out[0] = is_error ? 1'b0 : is_under;  
+    assign uo_out[1] = is_error ? 1'b0 : is_inside; 
+    assign uo_out[2] = is_error ? 1'b0 : is_over;   
+    assign uo_out[3] = is_error;                    
+    
+    assign uo_out[7:4] = 4'b0000; 
+
+endmodule
   // List all unused inputs to prevent warnings
   wire _unused = &{ena, clk, rst_n, 1'b0};
 
