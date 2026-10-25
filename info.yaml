@@ -1,17 +1,17 @@
 # Tiny Tapeout project information
 project:
-  title:        "C01 Window Monitor"     
-  author:       "Lưu Tuấn Vỹ"      
+  title:        "C01 window monitor"
+  author:       "Luu Tuan Vy"
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "8-bit window monitor, EEE703128"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
-  clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
+  clock_hz:     10000000       # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
   tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
-  top_module:  "tt_um_luutuanvy"
+  top_module:  "tt_um_eee703128_c01_24101004"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.
@@ -23,34 +23,34 @@ project:
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: "sample_bit0"
-  ui[1]: "sample_bit1"
-  ui[2]: "sample_bit2"
-  ui[3]: "sample_bit3"
-  ui[4]: "sample_bit4"
-  ui[5]: "sample_bit5"
-  ui[6]: "sample_bit6"
-  ui[7]: "sample_bit7"
+  ui[0]: "sample0"
+  ui[1]: "sample1"
+  ui[2]: "sample2"
+  ui[3]: "sample3"
+  ui[4]: "sample4"
+  ui[5]: "sample5"
+  ui[6]: "sample6"
+  ui[7]: "sample7"
 
   # Outputs
-  uo[0]: "status_under"
-  uo[1]: "status_inside"
-  uo[2]: "status_over"
-  uo[3]: "error_config"
+  uo[0]: "below"
+  uo[1]: "in_window"
+  uo[2]: "above"
+  uo[3]: "config_error"
   uo[4]: ""
   uo[5]: ""
   uo[6]: ""
   uo[7]: ""
 
   # Bidirectional pins
-  uio[0]: "threshold_data_bit0"
-  uio[1]: "threshold_data_bit1"
-  uio[2]: "threshold_data_bit2"
-  uio[3]: "threshold_data_bit3"
-  uio[4]: "threshold_data_bit4"
-  uio[5]: "threshold_data_bit5"
-  uio[6]: "threshold_data_bit6"
-  uio[7]: "threshold_data_bit7"
+  uio[0]: "thr0"
+  uio[1]: "thr1"
+  uio[2]: "thr2"
+  uio[3]: "thr3"
+  uio[4]: "thr4"
+  uio[5]: "thr5"
+  uio[6]: "thr6"
+  uio[7]: "thr7"
 
 # Do not change!
 yaml_version: 6
