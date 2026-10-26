@@ -1,12 +1,60 @@
-/*
- * EEE703128 - Bai kiem tra so 2 - De C01
- * Bo giam sat cua so gia tri hop le 8-bit
- * 1) c01_window_monitor : LOI so sanh, mach TO HOP THUAN (0 flip-flop)
- * 2) tt_um_eee703128_c01_24101004 : VO khung chan Tiny Tapeout,
- *    co thanh ghi nap nguong 2 lan (min roi max) qua uio_in
+/* 
+ * Họ và tên: Lưu Tuấn Vỹ
+ * Msv: 24101004
+ * Đề tài: C01 - Bộ giám sát cửa sổ giá trị hợp lệ 8-bit
  */
+
 `default_nettype none
 
+module tt_um_luutuanvy (
+    input  wire [7:0] ui_in,    // Nhận dữ liệu mẫu: sample_in[7:0]
+    output wire [7:0] uo_out,   // Trả về cờ phân loại: {4'b0, config_error, above, in_window, below}
+    input  wire [7:0] uio_in,   // Nhận ngưỡng: min_val (ena=1) hoặc max_val (ena=0)
+    output wire [7:0] uio_out,  // Không dùng
+    output wire [7:0] uio_oe,   // 0 = Input, 1 = Output (Mặc định 0)
+    input  wire       ena,      // Tín hiệu chọn nạp ngưỡng
+    input  wire       clk,      // Xung nhịp hệ thống
+    input  wire       rst_n     // Reset tích cực mức THẤP
+);
+
+    // Thanh ghi lưu cấu hình ngưỡng
+    reg [7:0] min_val_reg;
+    reg [7:0] max_val_reg;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            min_val_reg <= 8'd0;
+            max_val_reg <= 8'd255;
+        end else begin
+            if (ena) 
+                min_val_reg <= uio_in;
+            else 
+                max_val_reg <= uio_in;
+        end
+    end
+
+    // Dây nối ngõ ra từ lõi tổ hợp
+    wire below_w, in_window_w, above_w, config_error_w;
+
+    // Khởi tạo lõi C01 (đã vá lỗi từ khóa inside -> in_window)
+    c01_window_monitor core_inst (
+        .sample_in    (ui_in),
+        .min_val      (min_val_reg),
+        .max_val      (max_val_reg),
+        .below        (below_w),
+        .in_window    (in_window_w),
+        .above        (above_w),
+        .config_error (config_error_w)
+    );
+
+    // Gán tín hiệu ra chân vật lý
+    assign uo_out  = {4'b0000, config_error_w, above_w, in_window_w, below_w};
+    assign uio_out = 8'b0;
+    assign uio_oe  = 8'b0;
+
+endmodule
+
+// Lõi C01 nguyên bản viết lại bằng Verilog-2005 tiêu chuẩn để đảm bảo tương thích 100% CI
 module c01_window_monitor (
     input  wire [7:0] sample_in,
     input  wire [7:0] min_val,
@@ -16,11 +64,14 @@ module c01_window_monitor (
     output reg        above,
     output reg        config_error
 );
-    always @* begin
+    always @(*) begin
         config_error = (min_val > max_val);
-        below        = 1'b0;
-        in_window    = 1'b0;
-        above        = 1'b0;
+
+        // Gán giá trị mặc định để chống sinh latch
+        below     = 1'b0;
+        in_window = 1'b0;
+        above     = 1'b0;
+
         if (!config_error) begin
             below     = (sample_in < min_val);
             above     = (sample_in > max_val);
@@ -28,52 +79,3 @@ module c01_window_monitor (
         end
     end
 endmodule
-
-module tt_um_eee703128_c01_24101004 (
-    input  wire [7:0] ui_in,
-    output wire [7:0] uo_out,
-    input  wire [7:0] uio_in,
-    output wire [7:0] uio_out,
-    output wire [7:0] uio_oe,
-    input  wire       ena,
-    input  wire       clk,
-    input  wire       rst_n
-);
-    reg [1:0] phase;      // 0: cho nap min, 1: cho nap max, 2: da khoa
-    reg [7:0] min_r;
-    reg [7:0] max_r;
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            phase <= 2'd0;
-            min_r <= 8'd0;
-            max_r <= 8'd255;
-        end else begin
-            case (phase)
-                2'd0:    begin min_r <= uio_in; phase <= 2'd1; end
-                2'd1:    begin max_r <= uio_in; phase <= 2'd2; end
-                default: phase <= 2'd2;
-            endcase
-        end
-    end
-
-    wire below, in_window, above, config_error;
-
-    c01_window_monitor u_core (
-        .sample_in    (ui_in),
-        .min_val      (min_r),
-        .max_val      (max_r),
-        .below        (below),
-        .in_window    (in_window),
-        .above        (above),
-        .config_error (config_error)
-    );
-
-    assign uo_out  = {4'b0000, config_error, above, in_window, below};
-    assign uio_out = 8'b0;
-    assign uio_oe  = 8'b0;
-
-    wire _unused = &{ena, 1'b0};
-endmodule
-
-`default_nettype wire
