@@ -1,0 +1,4 @@
+env:
+  MA_DE: C01
+  DESIGN_NAME: c01_window_monitor
+  CONFIG: config.json
