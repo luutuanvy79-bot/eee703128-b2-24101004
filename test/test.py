@@ -1,40 +1,61 @@
-# SPDX-FileCopyrightText: © 2024 Tiny Tapeout
-# SPDX-License-Identifier: Apache-2.0
-
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
 
-@cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
+def model(s, lo, hi):
+    if lo > hi:
+        return 0b1000
+    if s < lo:
+        return 0b0001
+    if s > hi:
+        return 0b0100
+    return 0b0010
 
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, unit="us")
+
+async def start(dut):
+    try:
+        clock = Clock(dut.clk, 10, unit="us")
+    except TypeError:
+        clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
 
-    # Reset
-    dut._log.info("Reset")
+
+async def load(dut, mn, mx):
     dut.ena.value = 1
     dut.ui_in.value = 0
     dut.uio_in.value = 0
     dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 10)
+    await ClockCycles(dut.clk, 3)
     dut.rst_n.value = 1
-
-    dut._log.info("Test project behavior")
-
-    # Set the input values you want to test
-    dut.ui_in.value = 20
-    dut.uio_in.value = 30
-
-    # Wait for one clock cycle to see the output values
+    dut.uio_in.value = mn          # canh len 1: chot min
     await ClockCycles(dut.clk, 1)
+    dut.uio_in.value = mx          # canh len 2: chot max
+    await ClockCycles(dut.clk, 1)
+    dut.uio_in.value = 0xAA        # doi nguong tren chan: phai KHONG anh huong nua
+    await ClockCycles(dut.clk, 2)
 
-    # The following assersion is just an example of how to check the output values.
-    # Change it to match the actual expected output of your module:
-    assert dut.uo_out.value == 50
 
-    # Keep testing the module by changing the input values, waiting for
-    # one or more clock cycles, and asserting the expected output values.
+async def check(dut, s, lo, hi):
+    dut.ui_in.value = s
+    await ClockCycles(dut.clk, 1)
+    got = int(dut.uo_out.value) & 0x0F
+    assert got == model(s, lo, hi), f"s={s} min={lo} max={hi} got={got:04b}"
+
+
+@cocotb.test()
+async def test_c01(dut):
+    await start(dut)
+    # 6 ca bat buoc cua charter
+    await load(dut, 50, 100)
+    for s in (49, 50, 75, 100, 101):
+        await check(dut, s, 50, 100)
+    await load(dut, 100, 50)
+    await check(dut, 75, 100, 50)
+    # ca tu xay dung
+    await load(dut, 100, 99)
+    for s in (0, 99, 200):
+        await check(dut, s, 100, 99)
+    await load(dut, 100, 100)
+    for s in (99, 100, 101):
+        await check(dut, s, 100, 100)
